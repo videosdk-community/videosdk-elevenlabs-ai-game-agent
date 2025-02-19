@@ -8,8 +8,11 @@ class AIAgent:
             mic_enabled=False,
             webcam_enabled=False
         )
+        self.ai_agent = VideoSDK.init_meeting(**self.meeting_config)
         
     async def join(self):
-        ai_agent = VideoSDK.init_meeting(**self.meeting_config)
-        await ai_agent.async_join()
+        await self.ai_agent.async_join()
+    
+    async def leave(self):
+        self.ai_agent.leave()
     
