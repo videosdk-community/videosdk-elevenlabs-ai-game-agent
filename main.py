@@ -20,6 +20,11 @@ class MeetingReqConfig(BaseModel):
     meeting_id: str
     token: str
     
+async def server_operations():
+    # join ai agent
+    # keep server alive
+    pass
+    
 @app.get("/test")
 async def test():
     return {"message": "CORS is working!"}
