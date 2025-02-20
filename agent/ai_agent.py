@@ -1,4 +1,4 @@
-from videosdk import MeetingConfig, VideoSDK, MeetingEventHandler, Meeting, PubSubSubscribeConfig
+from videosdk import MeetingConfig, VideoSDK, MeetingEventHandler, Meeting, PubSubSubscribeConfig, PubSubPublishConfig
 import asyncio
 class AIAgent:
     def __init__(self, meeting_id: str, authToken: str, name: str):
@@ -30,6 +30,16 @@ class GameEventHandler(MeetingEventHandler):
     def receive_client_msg(self, data):
         message = data["message"]
         print(f"client's response : {message}")
+        # LLM to generate server response
+        # publish response back to client
+    
+    async def publish_to_pubsub(self):
+        publish_config=PubSubPublishConfig(
+            topic=self.pubsub_topic,
+            message="" # llm response
+        )
+        await self.agent.pubsub.publish(pubsub_config=publish_config)
+        
             
     async def subscribe_to_pubsub(self):
         pubsub_config = PubSubSubscribeConfig(
@@ -38,7 +48,8 @@ class GameEventHandler(MeetingEventHandler):
         )
             
         await self.agent.pubsub.subscribe(pubsub_config=pubsub_config)
-            
+
+        
     def on_meeting_joined(self, data):
         asyncio.create_task(self.subscribe_to_pubsub())
         
