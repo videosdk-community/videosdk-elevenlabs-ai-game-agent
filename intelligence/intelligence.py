@@ -23,6 +23,8 @@ class OpenAiIntelligence:
             "player": "O"
         }
         
+        # generate ai comments
+        # elevenLabs : voice response
         return ai_move
     
     def _get_ai_move(self, board, available_positions):
