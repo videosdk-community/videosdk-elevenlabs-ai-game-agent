@@ -2,27 +2,26 @@ from videosdk import MeetingConfig, VideoSDK, MeetingEventHandler, Meeting, PubS
 import asyncio
 import json
 from intelligence.intelligence import OpenAiIntelligence
-# from tts.elevenlabs import ElevenLabsTTS
-# 1
-# from agent.audio_stream_track import CustomAudioStreamTrack
+from tts.elevenlabs import ElevenLabsTTS
+from agent.audio_stream_track import CustomAudioStreamTrack
 from videosdk.stream import MediaStreamTrack
 
 class AIAgent:
     def __init__(self, meeting_id: str, authToken: str, name: str):
         # 2
-        # self.loop = asyncio.get_running_loop()
-        # self.audio_track = CustomAudioStreamTrack(
-        #     loop=self.loop,
-        #     handle_interruption=True
-        # )
+        self.loop = asyncio.get_running_loop()
+        self.audio_track = CustomAudioStreamTrack(
+            loop=self.loop,
+            handle_interruption=True
+        )
         
         self.meeting_config = MeetingConfig(
             name=name,
             meeting_id=meeting_id,
             token=authToken,
-            mic_enabled=False,
+            mic_enabled=True,
             webcam_enabled=False,
-            # custom_microphone_audio_track=self.audio_track
+            custom_microphone_audio_track=self.audio_track
         )
         # Listen to Meeting Events
         # subscribe to pubsub topic - GAME_MOVES``
@@ -34,14 +33,14 @@ class AIAgent:
         
     async def join(self):
         # 3
-        self.ai_agent.add_event_listener(GameEventHandler(agent=self.ai_agent))
+        self.ai_agent.add_event_listener(GameEventHandler(agent=self.ai_agent, audio_track=self.audio_track))
         await self.ai_agent.async_join()
     
     def leave(self):
         self.ai_agent.leave()
     
 class GameEventHandler(MeetingEventHandler):
-    def __init__(self, agent: Meeting):
+    def __init__(self, agent: Meeting, audio_track: MediaStreamTrack):
         super().__init__()
         self.agent = agent
         self.pubsub_topic = "GAME_MOVES"
@@ -54,8 +53,8 @@ class GameEventHandler(MeetingEventHandler):
         }
         
         # 4
-        # self.audio_track= audio_track
-        # self.tts = ElevenLabsTTS(output_track=self.audio_track)
+        self.audio_track= audio_track
+        self.tts = ElevenLabsTTS(output_track=self.audio_track)
         
     def check_winner(self):
         board = self.game_state["board"]
@@ -79,13 +78,12 @@ class GameEventHandler(MeetingEventHandler):
  
     async def generate_ai_move(self):
             ai_move = self.openai_client.generate_server_response(game_state=self.game_state)
-            # comment = ai_move.get("comment", "")
-            
             # 1. get ai comment
-            # loop = asyncio.get_event_loop()
+            comment = ai_move.get("comment", "")
             
-            # await loop.run_in_executor(None, self.tts.generate, comment)
             # 2. Generate TTS and get the audio bytes
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, self.tts.generate, comment)
 
           
             await self.publish_to_pubsub(ai_move)
