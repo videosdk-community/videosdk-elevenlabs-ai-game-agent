@@ -5,3 +5,4 @@ openai
 python-dotenv
 elevenlabs
 numpy
+deepgram-sdk==3.4.0

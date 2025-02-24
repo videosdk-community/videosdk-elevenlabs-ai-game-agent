@@ -8,6 +8,29 @@ class OpenAiIntelligence:
         self.game_moves = []
         self.openai_client = OpenAI()
         
+    # parse move 
+    def parse_move(self, text):
+        prompt = f"""Determine if the user's message is a tic-tac-toe move. If yes, output the position (0-8). 
+        User: "{text}". Respond ONLY with the position number or -1 if not a move."""
+        response = self.openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0
+        )
+        try:
+            return int(response.choices[0].message.content.strip())
+        except:
+            return -1
+
+    def generate_chat_response(self, text):
+        prompt = f"""You are an AI playing tic-tac-toe. Respond conversationally to: "{text}". Keep it short."""
+        response = self.openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+        
     def generate_server_response(self, game_state):
         # Get current game state from server
         board = game_state["board"]  # Connect to server's game state

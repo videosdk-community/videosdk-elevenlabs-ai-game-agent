@@ -1,10 +1,11 @@
-from videosdk import MeetingConfig, VideoSDK, MeetingEventHandler, Meeting, PubSubSubscribeConfig, PubSubPublishConfig
+from videosdk import MeetingConfig, VideoSDK, MeetingEventHandler, Meeting, PubSubSubscribeConfig, PubSubPublishConfig, ParticipantEventHandler, Participant
 import asyncio
 import json
 from intelligence.intelligence import OpenAiIntelligence
 from tts.elevenlabs import ElevenLabsTTS
 from agent.audio_stream_track import CustomAudioStreamTrack
 from videosdk.stream import MediaStreamTrack
+from stt.deepgram import DeepgramSTT
 
 class AIAgent:
     def __init__(self, meeting_id: str, authToken: str, name: str):
@@ -55,6 +56,7 @@ class GameEventHandler(MeetingEventHandler):
         # 4
         self.audio_track= audio_track
         self.tts = ElevenLabsTTS(output_track=self.audio_track)
+        self.stt = DeepgramSTT(callback=self.handle_transcript)
         
     def check_winner(self):
         board = self.game_state["board"]
@@ -82,8 +84,7 @@ class GameEventHandler(MeetingEventHandler):
             comment = ai_move.get("comment", "")
             
             # 2. Generate TTS and get the audio bytes
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, self.tts.generate, comment)
+            await self.tts.generate(comment)
 
           
             await self.publish_to_pubsub(ai_move)
@@ -153,4 +154,47 @@ class GameEventHandler(MeetingEventHandler):
         
     def on_meeting_joined(self, data):
         asyncio.create_task(self.subscribe_to_pubsub())
+
+    def on_participant_joined(self, participant):
+        print(f"Participant {participant.display_name} joined")
+        participant.add_event_listener(
+            ParticipantSTTEventListener(stt=self.stt, participant=participant)
+        )
+
+    def on_participant_left(self, participant):
+        print(f"Participant {participant.display_name} left")
+        self.stt.stop(peer_id=participant.id)
+
+    async def handle_transcript(self, transcript, peer_id, peer_name, is_final):
+        print("text: ", transcript)
+        # Check if the transcript is a game move
+        position = await self.openai_client.parse_move(transcript)
+        if position is not None and 0 <= position <= 8:
+            if self.game_state["board"][position] is None and not self.game_state["game_over"]:
+                move_msg = {"type": "move", "position": position, "player": "X"}
+                await self.validate_and_process_move(move_msg)
+        else:
+            # Generate conversational response
+            response = self.openai_client.generate_chat_response(transcript)
+            await self.tts.generate(response)
+
+
+class ParticipantSTTEventListener(ParticipantEventHandler):
+    def __init__(self, stt: DeepgramSTT, participant: Participant):
+        super().__init__()
+        self.stt = stt
+        self.participant = participant
+
+    def on_stream_enabled(self, stream):
+        if stream.kind == "audio":
+            self.stt.start(
+                peer_id=self.participant.id,
+                peer_name=self.participant.display_name,
+                track=stream.track
+            )
+
+    def on_stream_disabled(self, stream):
+        if stream.kind == "audio":
+            self.stt.stop(peer_id=self.participant.id)
+
         
