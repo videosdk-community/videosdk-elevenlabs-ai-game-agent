@@ -3,3 +3,5 @@ fastapi
 videosdk
 openai
 python-dotenv
+elevenlabs
+numpy
