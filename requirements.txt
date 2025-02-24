@@ -1,3 +1,5 @@
 uvicorn
 fastapi
 videosdk
+openai
+python-dotenv
