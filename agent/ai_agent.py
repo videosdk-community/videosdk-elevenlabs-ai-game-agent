@@ -164,22 +164,22 @@ class GameEventHandler(MeetingEventHandler):
         print(f"Participant {participant.display_name} left")
         self.stt.stop(peer_id=participant.id)
 
-    # def handle_transcript(self, peer_name, text):
-    #     print(f"[{peer_name}]:", text)
-    #     # Generate conversational response in a non-blocking manner
-    #     asyncio.run_coroutine_threadsafe(self.generate_conversational_response(text), self.loop)
+    def handle_transcript(self, peer_name, text):
+        print(f"[{peer_name}]:", text)
+        # Generate conversational response in a non-blocking manner
+        asyncio.run_coroutine_threadsafe(self.generate_conversational_response(text), self.loop)
         
-    # async def generate_conversational_response(self, text):
-    #     # Generate response using OpenAI (run in executor to avoid blocking)
-    #     loop = asyncio.get_event_loop()
-    #     response = await loop.run_in_executor(
-    #         None,
-    #         self.openai_client.generate_chat_response,
-    #         text,
-    #         self.game_state  # Optional: pass game state for context
-    #     )
-    #     # Queue the response for TTS
-    #     await self.tts.generate(response)
+    async def generate_conversational_response(self, text):
+        # Generate response using OpenAI (run in executor to avoid blocking)
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            self.openai_client.generate_chat_response,
+            text,
+            self.game_state  # Optional: pass game state for context
+        )
+        # Queue the response for TTS
+        await self.tts.generate(response)
 
 
 class ParticipantSTTEventListener(ParticipantEventHandler):
