@@ -30,19 +30,18 @@ class AIAgent:
         self.ai_agent = VideoSDK.init_meeting(**self.meeting_config)
         
         
-        
-        
     async def join(self):
         # 3
-        self.ai_agent.add_event_listener(GameEventHandler(agent=self.ai_agent, audio_track=self.audio_track))
+        self.ai_agent.add_event_listener(GameEventHandler(agent=self.ai_agent, audio_track=self.audio_track, loop=self.loop))
         await self.ai_agent.async_join()
     
     def leave(self):
         self.ai_agent.leave()
     
 class GameEventHandler(MeetingEventHandler):
-    def __init__(self, agent: Meeting, audio_track: MediaStreamTrack):
+    def __init__(self, agent: Meeting, audio_track: MediaStreamTrack, loop: asyncio.AbstractEventLoop):
         super().__init__()
+        self.loop = loop
         self.agent = agent
         self.pubsub_topic = "GAME_MOVES"
         self.openai_client = OpenAiIntelligence()
@@ -165,18 +164,22 @@ class GameEventHandler(MeetingEventHandler):
         print(f"Participant {participant.display_name} left")
         self.stt.stop(peer_id=participant.id)
 
-    async def handle_transcript(self, transcript, peer_id, peer_name, is_final):
-        print("text: ", transcript)
-        # Check if the transcript is a game move
-        position = await self.openai_client.parse_move(transcript)
-        if position is not None and 0 <= position <= 8:
-            if self.game_state["board"][position] is None and not self.game_state["game_over"]:
-                move_msg = {"type": "move", "position": position, "player": "X"}
-                await self.validate_and_process_move(move_msg)
-        else:
-            # Generate conversational response
-            response = self.openai_client.generate_chat_response(transcript)
-            await self.tts.generate(response)
+    # def handle_transcript(self, peer_name, text):
+    #     print(f"[{peer_name}]:", text)
+    #     # Generate conversational response in a non-blocking manner
+    #     asyncio.run_coroutine_threadsafe(self.generate_conversational_response(text), self.loop)
+        
+    # async def generate_conversational_response(self, text):
+    #     # Generate response using OpenAI (run in executor to avoid blocking)
+    #     loop = asyncio.get_event_loop()
+    #     response = await loop.run_in_executor(
+    #         None,
+    #         self.openai_client.generate_chat_response,
+    #         text,
+    #         self.game_state  # Optional: pass game state for context
+    #     )
+    #     # Queue the response for TTS
+    #     await self.tts.generate(response)
 
 
 class ParticipantSTTEventListener(ParticipantEventHandler):

@@ -30,8 +30,8 @@ async def server_operations(req:MeetingReqConfig):
     try:
         await ai_agent.join()
         while True:
-            await asyncio.sleep(1)
-            print("Server is running is background")
+            await asyncio.sleep(0.1)
+            # print("Server is running is background")
     except Exception as ex:
         print(f"[ERROR]: either joining or running bg tasks: {ex}")
     finally:
