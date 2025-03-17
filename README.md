@@ -1,5 +1,3 @@
-[![Watch the video](https://i9.ytimg.com/vi/HwgSU87TO3E/maxresdefault.jpg?v=67d5204e&sqp=CLSN1r4G&rs=AOn4CLBB1iOHxSKS8bJYHmcG5uU_aXHUhQ)](https://youtu.be/bhPgjMXL6H8)
-
 This project integrates VideoSDK, ElevenLabs, and Deepgram APIs to create an AI-powered game agent. Below are the setup instructions.
 
 ### Start with the project
